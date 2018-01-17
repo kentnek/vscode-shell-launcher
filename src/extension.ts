@@ -10,6 +10,7 @@ interface ShellConfig {
     args?: string[];
     label?: string;
     launchName?: string;
+    cwd?: string;
 }
 
 interface ShellLauncherConfig {
@@ -69,11 +70,26 @@ export function activate(context: vscode.ExtensionContext) {
                 description: getShellDescription(s)
             };
         });
+
         vscode.window.showQuickPick(items, options).then(item => {
             if (!item) {
                 return;
             }
             const shell = shells.filter(c => getShellLabel(c) === item.label)[0];
+            
+            if (!shell.cwd) {
+                let document = editor.document;
+                if (document && document.uri) {
+                    shell.cwd = path.dirname(document.uri.fsPath);
+                }
+            }
+            
+            const options: vscode.TerminalOptions = {
+                name: shell.launchName,
+                shellPath: shell.shell,
+                shellArgs: shell.args,
+                cwd: shell.cwd
+            }
             const terminal = vscode.window.createTerminal(shell.launchName, shell.shell, shell.args);
             terminal.show();
         });
